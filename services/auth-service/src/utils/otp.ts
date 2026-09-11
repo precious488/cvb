@@ -8,7 +8,7 @@
  * - Sending it via Brevo's HTTP API (avoids Render's blocked SMTP ports)
  * - Verifying it (one-time use — deleted after first check)
  */
-import * as brevo from '@getbrevo/brevo'
+import { BrevoClient } from '@getbrevo/brevo'
 import crypto from 'crypto'
 import { getRedisClient } from '@craft/shared'
 import { logger } from '@craft/shared'
@@ -45,17 +45,12 @@ export async function verifyOTP(
 }
 
 // ─── Brevo API client ──────────────────────────────────────────
-let _apiInstance: brevo.TransactionalEmailsApi | null = null
+let _brevo: BrevoClient | null = null
 
-function getBrevoClient(): brevo.TransactionalEmailsApi {
-  if (_apiInstance) return _apiInstance
-
-  _apiInstance = new brevo.TransactionalEmailsApi()
-  _apiInstance.setApiKey(
-    brevo.TransactionalEmailsApiApiKeys.apiKey,
-    process.env.BREVO_API_KEY ?? '',
-  )
-  return _apiInstance
+function getBrevoClient(): BrevoClient {
+  if (_brevo) return _brevo
+  _brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY ?? '' })
+  return _brevo
 }
 
 // ─── Send OTP email ───────────────────────────────────────────
@@ -64,34 +59,34 @@ export async function sendOTPEmail(
   otp: string,
   fullName: string,
 ): Promise<void> {
-  const client = getBrevoClient()
+  const brevo = getBrevoClient()
 
-  const message = new brevo.SendSmtpEmail()
-  message.sender = {
-    email: process.env.EMAIL_FROM ?? 'noreply@resumeai.com',
-    name: 'ResumeAI',
-  }
-  message.to = [{ email, name: fullName }]
-  message.subject = `Your ResumeAI login code: ${otp}`
-  message.textContent = `Hi ${fullName},\n\nYour one-time login code is: ${otp}\n\nThis code expires in 10 minutes.\n\nIf you did not request this, please ignore this email.\n\n— The ResumeAI Team`
-  message.htmlContent = `
-    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
-      <div style="background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">ResumeAI</h1>
+  await brevo.transactionalEmails.sendTransacEmail({
+    subject: `Your ResumeAI login code: ${otp}`,
+    sender: {
+      name: 'ResumeAI',
+      email: process.env.EMAIL_FROM ?? 'befehprecious@gmail.com',
+    },
+    to: [{ email, name: fullName }],
+    textContent: `Hi ${fullName},\n\nYour one-time login code is: ${otp}\n\nThis code expires in 10 minutes.\n\nIf you did not request this, please ignore this email.\n\n— The ResumeAI Team`,
+    htmlContent: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
+        <div style="background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">ResumeAI</h1>
+        </div>
+        <h2 style="color: #1a1a2e; font-size: 18px;">Your login verification code</h2>
+        <p style="color: #555; font-size: 14px;">Hi ${fullName},</p>
+        <p style="color: #555; font-size: 14px;">Use the code below to complete your sign-in:</p>
+        <div style="background: #f5f5ff; border: 2px solid #4f46e5; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+          <span style="font-size: 40px; font-weight: bold; letter-spacing: 12px; color: #4f46e5;">${otp}</span>
+        </div>
+        <p style="color: #888; font-size: 12px;">This code expires in <strong>10 minutes</strong> and can only be used once.</p>
+        <p style="color: #888; font-size: 12px;">If you did not request this code, you can safely ignore this email.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+        <p style="color: #bbb; font-size: 11px; text-align: center;">— The ResumeAI Team</p>
       </div>
-      <h2 style="color: #1a1a2e; font-size: 18px;">Your login verification code</h2>
-      <p style="color: #555; font-size: 14px;">Hi ${fullName},</p>
-      <p style="color: #555; font-size: 14px;">Use the code below to complete your sign-in:</p>
-      <div style="background: #f5f5ff; border: 2px solid #4f46e5; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
-        <span style="font-size: 40px; font-weight: bold; letter-spacing: 12px; color: #4f46e5;">${otp}</span>
-      </div>
-      <p style="color: #888; font-size: 12px;">This code expires in <strong>10 minutes</strong> and can only be used once.</p>
-      <p style="color: #888; font-size: 12px;">If you did not request this code, you can safely ignore this email.</p>
-      <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-      <p style="color: #bbb; font-size: 11px; text-align: center;">— The ResumeAI Team</p>
-    </div>
-  `
+    `,
+  })
 
-  await client.sendTransacEmail(message)
   logger.info({ email }, 'OTP email sent')
 }
