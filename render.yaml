@@ -21,6 +21,7 @@ services:
       cp -r ../shared/dist node_modules/@craft/shared/dist &&
       cp -r ../shared/src node_modules/@craft/shared/src &&
       cp ../shared/package.json node_modules/@craft/shared/package.json &&
+      cd node_modules/@craft/shared && npm install --omit=dev && cd ../../.. &&
       npm run build
     startCommand: cd api-gateway && node dist/index.js
     healthCheckPath: /health
@@ -67,6 +68,7 @@ services:
       cp -r ../../shared/dist node_modules/@craft/shared/dist &&
       cp -r ../../shared/src node_modules/@craft/shared/src &&
       cp ../../shared/package.json node_modules/@craft/shared/package.json &&
+      cd node_modules/@craft/shared && npm install --omit=dev && cd ../../.. &&
       npm run build
     startCommand: cd services/auth-service && node dist/index.js
     healthCheckPath: /health
@@ -123,6 +125,7 @@ services:
       cp -r ../../shared/dist node_modules/@craft/shared/dist &&
       cp -r ../../shared/src node_modules/@craft/shared/src &&
       cp ../../shared/package.json node_modules/@craft/shared/package.json &&
+      cd node_modules/@craft/shared && npm install --omit=dev && cd ../../.. &&
       npm run build
     startCommand: cd services/user-profile-service && node dist/index.js
     healthCheckPath: /health
@@ -161,6 +164,7 @@ services:
       cp -r ../../shared/dist node_modules/@craft/shared/dist &&
       cp -r ../../shared/src node_modules/@craft/shared/src &&
       cp ../../shared/package.json node_modules/@craft/shared/package.json &&
+      cd node_modules/@craft/shared && npm install --omit=dev && cd ../../.. &&
       npm run build
     startCommand: cd services/cv-service && node dist/index.js
     healthCheckPath: /health
@@ -200,6 +204,7 @@ services:
       cp -r ../../shared/dist node_modules/@craft/shared/dist &&
       cp -r ../../shared/src node_modules/@craft/shared/src &&
       cp ../../shared/package.json node_modules/@craft/shared/package.json &&
+      cd node_modules/@craft/shared && npm install --omit=dev && cd ../../.. &&
       npm run build
     startCommand: cd services/document-service && node dist/index.js
     healthCheckPath: /health
@@ -231,6 +236,7 @@ services:
       cp -r ../../shared/dist node_modules/@craft/shared/dist &&
       cp -r ../../shared/src node_modules/@craft/shared/src &&
       cp ../../shared/package.json node_modules/@craft/shared/package.json &&
+      cd node_modules/@craft/shared && npm install --omit=dev && cd ../../.. &&
       npm run build
     startCommand: cd services/ats-service && node dist/index.js
     healthCheckPath: /health
@@ -265,6 +271,7 @@ services:
       cp -r ../../shared/dist node_modules/@craft/shared/dist &&
       cp -r ../../shared/src node_modules/@craft/shared/src &&
       cp ../../shared/package.json node_modules/@craft/shared/package.json &&
+      cd node_modules/@craft/shared && npm install --omit=dev && cd ../../.. &&
       npm run build
     startCommand: cd services/ai-service && node dist/index.js
     healthCheckPath: /health
