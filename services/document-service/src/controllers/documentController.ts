@@ -1,5 +1,6 @@
 import { Response } from 'express'
-import puppeteer, { Browser } from 'puppeteer'
+import puppeteer, { Browser } from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
 import { z } from 'zod'
 import { renderTemplate, ResumeData } from '../templates/htmlTemplates'
 import { AuthenticatedRequest } from '@craft/shared'
@@ -11,13 +12,9 @@ let browserInstance: Browser | null = null
 async function getBrowser(): Promise<Browser> {
   if (!browserInstance || !browserInstance.connected) {
     browserInstance = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-      ],
+      headless: chromium.headless,
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
     })
     logger.info('Puppeteer browser launched')
   }
@@ -50,34 +47,43 @@ export async function generateDocument(
     'Generating PDF',
   )
 
-  const html = renderTemplate(resumeData)
-  const browser = await getBrowser()
-  const page = await browser.newPage()
-
   try {
-    await page.setContent(html, { waitUntil: 'networkidle0' })
+    const html = renderTemplate(resumeData)
+    const browser = await getBrowser()
+    const page = await browser.newPage()
 
-    // Emulate print media for proper rendering
-    await page.emulateMediaType('print')
+    try {
+      await page.setContent(html, { waitUntil: 'networkidle0' })
+      await page.emulateMediaType('print')
 
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: { top: '0', right: '0', bottom: '0', left: '0' },
-    })
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '0', right: '0', bottom: '0', left: '0' },
+      })
 
-    const filename = `resume-${Date.now()}.pdf`
-    res.setHeader('Content-Type', 'application/pdf')
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
-    res.setHeader('x-correlation-id', correlationId)
-    res.send(Buffer.from(pdfBuffer))
+      const filename = `resume-${Date.now()}.pdf`
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+      res.setHeader('x-correlation-id', correlationId)
+      res.send(Buffer.from(pdfBuffer))
 
-    log.info(
-      { userId: req.user?.sub, bytes: pdfBuffer.length },
-      'PDF generated and sent',
-    )
-  } finally {
-    await page.close()
+      log.info(
+        { userId: req.user?.sub, bytes: pdfBuffer.length },
+        'PDF generated and sent',
+      )
+    } finally {
+      await page.close()
+    }
+  } catch (err) {
+    log.error({ err }, 'PDF generation failed')
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to generate document',
+        correlationId,
+      })
+    }
   }
 }
 

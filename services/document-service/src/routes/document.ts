@@ -9,7 +9,7 @@ router.use(authenticate)
 // PDF generation is expensive — strict rate limit
 const pdfLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20,
+  max: 200,
   message: {
     success: false,
     error: 'PDF generation limit reached. Try again later.',
