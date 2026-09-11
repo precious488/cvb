@@ -240,11 +240,12 @@
 #         description: allow all traffic
 services:
   # ─── Redis ────────────────────────────────────────────────────
-  - type: redis
-    name: craft-redis
-    region: oregon
-    plan: free
-    maxmemoryPolicy: allkeys-lru
+- type: keyvalue
+  name: craft-redis
+  region: oregon
+  plan: free
+  maxmemoryPolicy: allkeys-lru
+  ipAllowList: []
 
   # ─── API Gateway ──────────────────────────────────────────────
   - type: web
