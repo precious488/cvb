@@ -96,16 +96,10 @@ services:
           property: connectionString
       - key: RABBITMQ_URL
         sync: false
-      - key: SMTP_HOST
-        value: smtp.gmail.com
-      - key: SMTP_PORT
-        value: 587
-      - key: SMTP_SECURE
-        value: false
-      - key: SMTP_USER
+      - key: BREVO_API_KEY
         sync: false
-      - key: SMTP_PASS
-        sync: false
+      - key: EMAIL_FROM
+        value: befehprecious@gmail.com
       - key: FRONTEND_URL
         sync: false
 

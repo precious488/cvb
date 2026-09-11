@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@craft/shared": "file:../../shared",
+    "@getbrevo/brevo": "^6.0.3",
     "amqplib": "^0.10.4",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
