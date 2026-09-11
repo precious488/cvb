@@ -14,6 +14,7 @@ import documentRoutes from './routes/document'
 
 const app = express()
 const PORT = process.env.PORT ?? 3004
+app.set('trust proxy', 1)
 
 app.use(helmet())
 app.use(
