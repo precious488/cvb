@@ -192,9 +192,9 @@ services:
     region: oregon
     plan: free
     buildCommand: >
-      cd shared && npm install --include=dev && npm run build &&
-      cd ../services/document-service &&
+      cd shared && npm install && npm run build && cd ../services/document-service &&
       npm install --include=dev &&
+      npx puppeteer browsers install chrome &&
       rm -rf node_modules/@craft/shared &&
       mkdir -p node_modules/@craft/shared &&
       cp -r ../../shared/dist node_modules/@craft/shared/dist &&
