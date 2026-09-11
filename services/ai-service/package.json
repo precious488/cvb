@@ -10,6 +10,7 @@
   "dependencies": {
     "@craft/shared": "file:../../shared",
     "cors": "^2.8.5",
+    "amqplib": "^0.10.3",
     "dotenv": "^17.4.2",
     "express": "^4.19.2",
     "express-rate-limit": "^7.3.1",
