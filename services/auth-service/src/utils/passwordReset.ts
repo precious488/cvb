@@ -1,9 +1,9 @@
 /**
  * passwordReset.ts
- * Drop into services/auth-service/src/utils/passwordReset.ts
+ * services/auth-service/src/utils/passwordReset.ts
  */
 import crypto from 'crypto'
-import nodemailer from 'nodemailer'
+import { BrevoClient } from '@getbrevo/brevo'
 import { getRedisClient } from '@craft/shared'
 import { logger } from '@craft/shared'
 
@@ -14,7 +14,6 @@ const RESET_KEY_PREFIX = 'pwd-reset:'
 export async function generateResetToken(userId: string): Promise<string> {
   const token = crypto.randomBytes(32).toString('hex')
   const key = `${RESET_KEY_PREFIX}${token}`
-  // Store userId under the token key
   await getRedisClient().setex(key, RESET_TTL_SECONDS, userId)
   logger.debug({ userId }, 'Password reset token generated')
   return token
@@ -25,29 +24,21 @@ export async function verifyResetToken(token: string): Promise<string | null> {
   const key = `${RESET_KEY_PREFIX}${token}`
   const userId = await getRedisClient().get(key)
   if (!userId) return null
-  // Consume immediately — token can only be used once
   await getRedisClient().del(key)
   logger.debug({ userId }, 'Password reset token consumed')
   return userId
 }
 
-// ─── Send reset email ─────────────────────────────────────────
-let _transporter: nodemailer.Transporter | null = null
+// ─── Brevo API client ──────────────────────────────────────────
+let _brevo: BrevoClient | null = null
 
-function getTransporter(): nodemailer.Transporter {
-  if (_transporter) return _transporter
-  _transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST ?? 'smtp.gmail.com',
-    port: Number(process.env.SMTP_PORT ?? 587),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  })
-  return _transporter
+function getBrevoClient(): BrevoClient {
+  if (_brevo) return _brevo
+  _brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY ?? '' })
+  return _brevo
 }
 
+// ─── Send reset email ─────────────────────────────────────────
 export async function sendPasswordResetEmail(
   email: string,
   fullName: string,
@@ -55,13 +46,17 @@ export async function sendPasswordResetEmail(
 ): Promise<void> {
   const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:8080'
   const resetUrl = `${frontendUrl}/reset-password?token=${token}`
+  const brevo = getBrevoClient()
 
-  await getTransporter().sendMail({
-    from: `"ResumeAI" <${process.env.SMTP_USER}>`,
-    to: email,
+  await brevo.transactionalEmails.sendTransacEmail({
     subject: 'Reset your ResumeAI password',
-    text: `Hi ${fullName},\n\nClick the link below to reset your password. This link expires in 15 minutes.\n\n${resetUrl}\n\nIf you did not request a password reset, you can safely ignore this email.\n\n— The ResumeAI Team`,
-    html: `
+    sender: {
+      name: 'ResumeAI',
+      email: process.env.EMAIL_FROM ?? 'befehprecious@gmail.com',
+    },
+    to: [{ email, name: fullName }],
+    textContent: `Hi ${fullName},\n\nClick the link below to reset your password. This link expires in 15 minutes.\n\n${resetUrl}\n\nIf you did not request a password reset, you can safely ignore this email.\n\n— The ResumeAI Team`,
+    htmlContent: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
         <div style="background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px;">
           <h1 style="color: white; margin: 0; font-size: 24px;">ResumeAI</h1>
